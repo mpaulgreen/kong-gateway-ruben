@@ -1,5 +1,4 @@
 {{- $namespace := cat $.Values.global.pattern $.Values.clusterGroup.name | replace " " "-" }}
-{{ if eq $.Values.global.secretsmanager "argocd-vault-plugin" }}
 ---
 apiVersion: v1
 kind: Secret
@@ -9,7 +8,6 @@ metadata:
   annotations:
     kubernetes.io/service-account.name: {{ .Values.clusterGroup.name }}-gitops-argocd-server
 type: kubernetes.io/service-account-token
-{{ end }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ArgoCD
@@ -52,27 +50,10 @@ spec:
             --set global.hubClusterDomain={{ .Values.global.hubClusterDomain }}
             --set global.localClusterDomain={{ coalesce .Values.global.localClusterDomain .Values.global.hubClusterDomain }}
             --post-renderer ./kustomize"]
-{{ if eq $.Values.global.secretsmanager "argocd-vault-plugin" }}          
-    - name: argocd-vault-plugin-helm
-      allowConcurrency: true
-      lockRepo: false
-      init:
-        command: ["/bin/sh", "-c"]
-        args: ["helm dependency build"]
+    - name: argocd-vault-plugin
       generate:
-        command: ["/bin/bash", "-c"]
-        args: ["helm template . --name-template ${ARGOCD_APP_NAME:0:52}
-            -f $(git rev-parse --show-toplevel)/values-global.yaml
-            -f $(git rev-parse --show-toplevel)/values-{{ .Values.clusterGroup.name }}.yaml
-            --set global.repoURL=$ARGOCD_APP_SOURCE_REPO_URL
-            --set global.targetRevision=$ARGOCD_APP_SOURCE_TARGET_REVISION
-            --set global.namespace=$ARGOCD_APP_NAMESPACE
-            --set global.pattern={{ .Values.global.pattern }}
-            --repository-cache
-            --set global.hubClusterDomain={{ .Values.global.hubClusterDomain }}
-            --set global.localClusterDomain={{ coalesce .Values.global.localClusterDomain .Values.global.hubClusterDomain }}
-            | argocd-vault-plugin generate -"]
-{{ end }}
+        command: ["argocd-vault-plugin"]
+        args: ["generate", "./"]
   applicationSet:
     resources:
       limits:
@@ -110,7 +91,6 @@ spec:
       requests:
         cpu: 250m
         memory: 256Mi
-{{ if eq $.Values.global.secretsmanager "argocd-vault-plugin" }}
     serviceaccount: {{ .Values.clusterGroup.name }}-gitops-argocd-server
     mountsatoken: true
     env:
@@ -143,7 +123,6 @@ spec:
       - name: custom-tools
         subPath: argocd-vault-plugin
         mountPath: /usr/local/bin/argocd-vault-plugin
-{{ end }}        
   resourceExclusions: |
     - apiGroups:
       - tekton.dev

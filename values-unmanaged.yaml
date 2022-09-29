@@ -1,3 +1,4 @@
+# Quick and Dirty Prototype
 clusterGroup:
   name: unmanaged
   isHubCluster: true
@@ -7,6 +8,7 @@ clusterGroup:
 
   namespaces:
   - vault
+  - golang-external-secrets
   - kong-clustering
 
   projects:
@@ -55,91 +57,43 @@ clusterGroup:
       - name: server.ha.raft.tls
         value: false
 
-    kong-cp:
-      name: kong-cp
-      namespace: kong
-      project: controlplane
-      path: charts/all/kong
-      clusterName: controlplane
-      syncPolicy:
-        syncOptions:
-          - CreateNamespace=true
-        automated:
-          selfHeal: true
-      ignoreDifferences:
-        - group: "apps"
-          kind: "Deployment"
-          jqPathExpressions:
-          - .spec.template.spec.containers[] | select(.name == "proxy").env[] | select(.name == "KONG_ADMIN_API_URI")
-        - group: keycloak.org
-          kind: "KeycloakClient"
-          jsonPointers:
-          - /spec/client/redirectUris
-          - /spec/client/rootUrl
-        - group: "apps.openshift.io"
-          kind: "DeploymentConfig"
-          name: "postgresql"
-          jqPathExpressions:
-          - .spec.template.spec.containers[] | select(.name == "postgresql").image
-          - .spec.triggers[].imageChangeParams.lastTriggeredImage
-      plugin:
-        name: argocd-vault-plugin-helm
-    kong-dp:
-      name: kong-dp
-      namespace: kong
-      project: dataplane
-      path: charts/all/kong
-      clusterName: dataplane
-      syncPolicy:
-        syncOptions:
-          - CreateNamespace=true
-        automated:
-          selfHeal: true
-      extraValueFiles:
-       - /values-kong-dp.yaml
-      ignoreDifferences:
-        - group: "apps"
-          kind: "Deployment"
-          jqPathExpressions:
-          - .spec.template.spec.containers[] | select(.name == "proxy").env[] | select(.name == "KONG_CLUSTER_CONTROL_PLANE" or .name == "KONG_CLUSTER_TELEMETRY_ENDPOINT")
-        - group: keycloak.org
-          kind: "KeycloakClient"
-          jsonPointers:
-          - /spec/client/redirectUris
-          - /spec/client/rootUrl
-      plugin:
-        name: argocd-vault-plugin-helm
-    bookinfo:
-      name: bookinfo
-      namespace: bookinfo
-      project: dataplane
-      path: charts/all/bookinfo
-      clusterName: dataplane
-      syncPolicy:
-        syncOptions:
-          - CreateNamespace=true
-        automated:
-          selfHeal: true
-    
-    kong-clustering:
-      name: kong-clustering
-      namespace: kong-clustering
+    golang-external-secrets:
+      name: golang-external-secrets
+      namespace: golang-external-secrets
       project: hub
-      path: charts/all/clustering
-      syncPolicy:
-        automated:
-          selfHeal: true
+      path: common/golang-external-secrets
 
-  imperative:
-    # NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
-    # The default schedule is every 10 minutes: imperative.schedule
-    # Total timeout of all jobs is 1h: imperative.activeDeadlineSeconds
-    # imagePullPolicy is set to always: imperative.imagePullPolicy
-    # For additional overrides that apply to the jobs, please refer to
-    # https://hybrid-cloud-patterns.io/imperative-actions/#additional-job-customizations
-    jobs:
-    - name: regional-ca
-      # ansible playbook to be run
-      playbook: ansible/playbooks/on-hub-get-regional-ca.yml
-      # per playbook timeout in seconds
-      timeout: 234
+  #   bookinfo:
+  #     name: bookinfo
+  #     namespace: bookinfo
+  #     project: dataplane
+  #     path: charts/all/bookinfo
+  #     clusterName: dataplane
+  #     syncPolicy:
+  #       syncOptions:
+  #         - CreateNamespace=true
+  #       automated:
+  #         selfHeal: true
+    
+  #   kong-clustering:
+  #     name: kong-clustering
+  #     namespace: kong-clustering
+  #     project: hub
+  #     path: charts/all/clustering
+  #     syncPolicy:
+  #       automated:
+  #         selfHeal: true
+
+  # imperative:
+  #   # NOTE: We *must* use lists and not hashes. As hashes lose ordering once parsed by helm
+  #   # The default schedule is every 10 minutes: imperative.schedule
+  #   # Total timeout of all jobs is 1h: imperative.activeDeadlineSeconds
+  #   # imagePullPolicy is set to always: imperative.imagePullPolicy
+  #   # For additional overrides that apply to the jobs, please refer to
+  #   # https://hybrid-cloud-patterns.io/imperative-actions/#additional-job-customizations
+  #   jobs:
+  #   - name: regional-ca
+  #     # ansible playbook to be run
+  #     playbook: ansible/playbooks/on-hub-get-regional-ca.yml
+  #     # per playbook timeout in seconds
+  #     timeout: 234

@@ -23,5 +23,3 @@ global:
     hostname: github.com
     # Account is the user or organization under which the pattern repo lives
     account: hybrid-cloud-patterns
-
-  secretsmanager: external-secrets
