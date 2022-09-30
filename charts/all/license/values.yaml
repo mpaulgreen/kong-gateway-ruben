@@ -1,0 +1,10 @@
+---
+global:
+  pattern: unmanaged
+  namespace: test
+  name: kong-enterprise license
+secretStore:
+  name: vault-backend
+  kind: ClusterSecretStore
+secretsBase:
+  key: secret/data/hub
