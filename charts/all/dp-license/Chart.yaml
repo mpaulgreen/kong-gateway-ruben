@@ -1,0 +1,6 @@
+apiVersion: v2
+description: A Helm chart to configure license secret
+keywords:
+- pattern
+name: dp-license-secret
+version: 0.0.1

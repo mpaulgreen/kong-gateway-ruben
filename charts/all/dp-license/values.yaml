@@ -1,0 +1,5 @@
+---
+global:
+  pattern: unmanaged
+  namespace: test
+  name: kong-enterprise license

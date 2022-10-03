@@ -8,7 +8,8 @@ clusterGroup:
   namespaces:
   - vault
   - golang-external-secrets
-  - kong-clustering
+  - kong
+  # - kong-clustering
 
   projects:
     - hub
@@ -56,94 +57,38 @@ clusterGroup:
       - name: server.ha.raft.tls
         value: false
 
-    golang-external-secrets:
+    golang-external-secrets-cp:
       name: golang-external-secrets
       namespace: golang-external-secrets
       project: hub
       path: common/golang-external-secrets
-
+    
     license:
       name: license
       namespace: kong
-      project: hub
-      path: charts/all/license
-      syncPolicy:
-        syncOptions:
-          - CreateNamespace=true
-        automated:
-          selfHeal: true
-      generators:
-        - clusters: {}
-
-    kong-cp:
-      name: kong-cp
-      namespace: kong
       project: controlplane
-      path: charts/all/kong
+      path: charts/all/license
       clusterName: controlplane
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
         automated:
           selfHeal: true
-      ignoreDifferences:
-        - group: "apps"
-          kind: "Deployment"
-          jqPathExpressions:
-          - .spec.template.spec.containers[] | select(.name == "proxy").env[] | select(.name == "KONG_ADMIN_API_URI")
-        - group: keycloak.org
-          kind: "KeycloakClient"
-          jsonPointers:
-          - /spec/client/redirectUris
-          - /spec/client/rootUrl
-        - group: "apps.openshift.io"
-          kind: "DeploymentConfig"
-          name: "postgresql"
-          jqPathExpressions:
-          - .spec.template.spec.containers[] | select(.name == "postgresql").image
-          - .spec.triggers[].imageChangeParams.lastTriggeredImage
 
-    kong-dp:
-      name: kong-dp
+    license-dp:
+      name: license-dp
       namespace: kong
       project: dataplane
-      path: charts/all/kong
+      path: charts/all/dp-license
       clusterName: dataplane
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
         automated:
           selfHeal: true
-      extraValueFiles:
-       - /values-kong-dp.yaml
       ignoreDifferences:
-        - group: "apps"
-          kind: "Deployment"
-          jqPathExpressions:
-          - .spec.template.spec.containers[] | select(.name == "proxy").env[] | select(.name == "KONG_CLUSTER_CONTROL_PLANE" or .name == "KONG_CLUSTER_TELEMETRY_ENDPOINT")
-        - group: keycloak.org
-          kind: "KeycloakClient"
+        - group: ""
+          kind: "Secret"
           jsonPointers:
-          - /spec/client/redirectUris
-          - /spec/client/rootUrl
-
-    bookinfo:
-      name: bookinfo
-      namespace: bookinfo
-      project: dataplane
-      path: charts/all/bookinfo
-      clusterName: dataplane
-      syncPolicy:
-        syncOptions:
-          - CreateNamespace=true
-        automated:
-          selfHeal: true
+          - /data
     
-    kong-clustering:
-      name: kong-clustering
-      namespace: kong-clustering
-      project: hub
-      path: charts/all/clustering
-      syncPolicy:
-        automated:
-          selfHeal: true
